@@ -1,4 +1,4 @@
-package chapter03;
+package GodOfJava.src.main.java.eclipseFile.chapter03;
 
 public class Car {
 	//기본 생성자 
