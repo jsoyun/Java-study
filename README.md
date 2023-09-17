@@ -23,6 +23,8 @@ Set 인터페이스 : 구현 클래스 HashSet , TreeSet, LinkedHashSet
 HashSet 순서필요없는 데이터를 해시테이블에 저장한다. set중에 성능이 가장 좋다. 
 TreeSet 저장된 데이터의 값에 따라 정렬되는 set. 레드블랙 트리타입으로 값 저장, hashSet보다는 약간 성능 느리다. 
 LinkedHashSet 연결된 목록 타입으로 구현된 해시테이블에 데이터를 저장한다. 저장된 순서에 따라 값 정렬된다, 대신 성능이 가장 느리다. 
+ 
+Map 인터페이서 : 구현 클래스 HashMap, TreeMap, LinkedHashMap
 
 
 
