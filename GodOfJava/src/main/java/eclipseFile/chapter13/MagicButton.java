@@ -1,4 +1,4 @@
-package chapter13;
+package GodOfJava.src.main.java.eclipseFile.chapter13;
 
 public class MagicButton {
 	public MagicButton() {
