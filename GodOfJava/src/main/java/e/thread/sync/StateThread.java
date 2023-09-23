@@ -13,10 +13,10 @@ public class StateThread extends Thread{
             try {
                 for(int loop =0; loop<1000; loop++){
                     String a = "A";
-                    System.out.println("for문");
+
                 }
                 synchronized (monitor) {
-                    monitor.wait();
+                    monitor.wait(100);
                     System.out.println("synchronized");
                 }
                 System.out.println(getName()+" is notified.");
