@@ -12,7 +12,7 @@ public class VolatileSample extends Thread{
       while (instanceVariable ==0){
 
           try {
-              System.out.println( "VolatileSample run:"+instanceVariable);
+//              System.out.println( "VolatileSample run:"+instanceVariable);
               Thread.sleep(1);
           } catch (InterruptedException e) {
               throw new RuntimeException(e);
