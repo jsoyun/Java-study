@@ -1,7 +1,9 @@
 package GodOfJava.src.main.java.java8;
 
+import javax.swing.text.html.Option;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.List;
@@ -124,6 +126,27 @@ public class StreamStringClass {
 //
 //        }
 //        System.out.println("newList"+newList);
+
+        List<Integer> numbers = Arrays.asList(1,2,3);
+        int sum = numbers.stream().reduce(0, Integer::sum);
+        System.out.println(sum);
+
+        Optional<Integer> sum2 = numbers.stream().reduce((a,b)-> (a+b));
+        System.out.println(sum2);
+
+        Optional<Integer> minValue = numbers.stream().reduce(Integer::min);
+        Optional<Integer> minValue2 = numbers.stream().reduce((x,y)->x<y ? x :y);
+        System.out.println(minValue);
+        System.out.println(minValue2);
+
+        List<String> menu = Arrays.asList("rice","cake","pizza");
+
+        int countOfMenu = menu.stream()
+                .map(v -> 1)
+                .reduce(0, Integer::sum);
+
+        System.out.println(countOfMenu);
+
 
 
 
