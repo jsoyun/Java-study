@@ -4,12 +4,13 @@ package GodOfJava.src.main.java.java8.Chapter06;
 
 import static java.util.Arrays.asList;
 import static java.util.Comparator.comparingInt;
+import static java.util.stream.Collector.Characteristics.IDENTITY_FINISH;
 import static java.util.stream.Collectors.*;
 
 
 
 import java.util.*;
-import java.util.function.BinaryOperator;
+import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -91,18 +92,139 @@ public class Dish {
 //        return IntStream.range(2, candidate) //2부터 candidate 미만 사이의 자연수를 생성한다.
 //                .noneMatch(i -> candidate % i ==0); //스트림의 모든 정수로 candidate를 나눌 수 없으면 참을 반환한다.
 //    }
-    public static boolean isPrime(int candidate){
-        int candidateRoot = (int) Math.sqrt((double) candidate); //소수의 대상을 주어진 수의 제곱근 이하의 수로 제한!
-        return IntStream.rangeClosed(2, candidateRoot)
-                .noneMatch(i -> candidate % i ==0);
+//    public static boolean isPrime(int candidate){
+//        int candidateRoot = (int) Math.sqrt((double) candidate); //소수의 대상을 주어진 수의 제곱근 이하의 수로 제한!
+//        return IntStream.rangeClosed(2, candidateRoot)
+//                .noneMatch(i -> candidate % i ==0);
+//    }
+//
+//    public static Map<Boolean, List<Integer>> partitionPrimes(int n){
+//        return IntStream.rangeClosed(2, n).boxed()
+//                .collect(
+//                        partitioningBy(candidate -> isPrime(candidate))
+//                );
+//    }
+    //6.6 커스텀 컬렉터를 구현해서 성능 개선하기
+
+    public static <A> List<A> takeWhile(List<A> list, Predicate<A> p){
+        int i =0;
+        for (A item : list){
+            if (!p.test(item)){
+                return list.subList(0,i);
+            }
+            i++;
+        }
+        return list;
     }
 
-    public static Map<Boolean, List<Integer>> partitionPrimes(int n){
+    public static boolean isPrimeNew (List<Integer> primes,int candidate){
+
+        int candidateRoot = (int) Math.sqrt((double) candidate);
+//        return primes.stream()
+//                .takeWhile(i -> i  <= candidateRoot)
+//                .noneMatch(i -> candidate % i == 0);
+        return takeWhile(primes, i -> i  <= candidateRoot)
+                .stream()
+                .noneMatch(p -> candidate % p ==0);
+
+    }
+
+    public static class PrimeNumbersCollector implements Collector<Integer,
+            Map<Boolean, List<Integer>>,
+            Map<Boolean, List<Integer>>
+            >{
+
+
+
+
+        @Override
+        public Supplier<Map<Boolean, List<Integer>>> supplier() {
+            //1단계 누적자를 만드는 함수 반환
+            return ()-> new HashMap<Boolean, List<Integer>>() {
+                {
+                    put(true, new ArrayList<Integer>()); // true 키와 빈 리스트로 초기화!
+                    put(false, new ArrayList<Integer>());
+
+                }
+            };
+        }
+
+        //2단계 accumulator는 최적화의 핵심이다
+        //언제든 원할 때 수집 과정의 중간결과, 즉 지금까지 발견한 소수를 포함하는 누적자에 접근할 수 있다.
+        @Override
+        public BiConsumer<Map<Boolean, List<Integer>>, Integer> accumulator() {
+            return (Map<Boolean, List<Integer>> acc, Integer candidate) ->{
+                acc.get ( isPrimeNew(acc.get(true) , candidate)) //isPrimeNew의 결과 에 따라 소수 리스트와 비소수 리스트를 만든다.
+                        .add(candidate); //candidate를 알맞은 리스트에 추가한다.
+            };
+        }
+
+        //3단계 병렬 수집과정에서 두 부분 누적자를 합칠 수 있는 메서드를 만든다.
+        //예제에서는 두 번째 맵 소수 리스트와 비소수 리스트의 모든 수를 첫 번째 맴에 추가하는 연산을 한다.
+        //실제로 이메서드는 사용할 일이 없지만 학습 목적으로 구현했다. 알고리즘 자체가 순차적이어서 컬렉터를 실제 병렬로 사용할 수는 없다.
+        //따라서 combiner 메서드는 호출될 일이 없으므로 빈 구현으로 남겨둘 수 있다.
+
+        @Override
+        public BinaryOperator<Map<Boolean, List<Integer>>> combiner() {
+            return (Map<Boolean, List<Integer>> map1, Map<Boolean, List<Integer>> map2) ->{
+              map1.get(true).addAll(map2.get(true));
+              map1.get(false).addAll(map2.get(false));
+              return map1;
+            };
+        }
+        //4단계 finisher 메서드와 컬렉터의 characteristics 메서드
+        //accumulator의 형식은 컬렉터 결과 형식과 같으므로 변환 과정이 필요없다. 따라서 항등 함수 identity를 반환하도록
+        //finisher 메서드를 구현한다.
+
+        @Override
+        public Function<Map<Boolean, List<Integer>>, Map<Boolean, List<Integer>>> finisher() {
+            return Function.identity(); //최종 수집과정에서는 변환이 필요없으므로 항등함수를 반환한다.
+        }
+
+        @Override
+        public Set<Characteristics> characteristics() {
+            return Collections.unmodifiableSet(EnumSet.of(IDENTITY_FINISH));
+            //발견한 소수의 순서에 의미가 있으므로 컬렉터는 IDENTITY_FINISH지만 UNORDERED, CONCURRENT는 아니다.
+
+        }
+    }
+//    public static Map<Boolean, List<Integer>> PartitionPrimesWithCustomCollector(int n){
+//        return IntStream.rangeClosed(2, n).boxed()
+//                .collect(new PrimeNumbersCollector());
+//    }
+
+    //collect 메서드로 PrimeNumbersCollector의 핵심 로직을 구현하는 세 함수를 전달해서 같은 결과를 얻을 수도 있다.
+    //즉 Collector 인터페이스를 구현하는 새로운 클래스를 만들 필요가 없다 결과 코드는 간결하지만 가독성과 재사용성은 떨어진다.
+
+    public static Map<Boolean, List<Integer>> PartitionPrimesWithCustomCollector(int n){
         return IntStream.rangeClosed(2, n).boxed()
                 .collect(
-                        partitioningBy(candidate -> isPrime(candidate))
+                        () -> new HashMap<Boolean, List<Integer>>(){{
+                            put(true, new ArrayList<Integer>());
+                            put(false, new ArrayList<Integer>());
+
+                        }},
+                        (acc , candidate) ->{
+                            acc.get(isPrimeNew(acc.get(true) , candidate))
+                                    .add(candidate);
+                        },
+                        (map1, map2) ->{
+                            map1.get(true).addAll(map2.get(true));
+                            map1.get(false).addAll(map2.get(false));
+
+                        }
+
+
+
+
+
                 );
     }
+
+
+
+
+
 
 
     public static void main(String[] args) {
@@ -348,7 +470,46 @@ public class Dish {
         //6.4.2 숫자를 소수와 비소수로 분할해보자! - 정수 n을 인수로 받아서 2에서 n까지의 자연수를 소수prime와 비소수 nonprime로
         //나누는 프로그램을 구현
 
-        System.out.println("Numbers partitioned in prime and non-prime: " + partitionPrimes(100));
+//        System.out.println("Numbers partitioned in prime and non-prime: " + partitionPrimes(100));
+
+        //예제로 해본 모든 컬렉터는 Collector 인터페이스를 구현한다.
+        //Collector 인터페이스의 메서드를 살펴보고 자신만의 커스텀 컬렉터를 구현하는 방법을 알아보자
+        //6.5 Collector 인터페이스
+        //컬렉터
+//        public Supplier<List<T>> supplier(){
+//            return () -> new ArrayList<T>();
+//        }
+//        //생성자 참조를 전달하는 방법
+//        public Supplier<List<T>> supplier(){
+//            return ArrayList::new ;
+//        }
+
+//        public BiConsumer<List<T>,T> accmulator(){
+//            return (list, item)->list.add(item);
+//        }
+//        //메서드 참조 이용
+//        public BiConsumer<List<T>,T> accmulator(){
+//            return list::add;
+//        }
+//
+//        public Function<List<T>, List<T>> finisher(){
+//            return Function.identity();
+//        }
+
+//        public BinaryOperator<List<T>> combiner(){
+//            return (list, list2) ->{
+//                list1.addAll(list2);
+//                return list1;
+//            }
+//        }
+        //6.5.2 응용하기
+        List<Dish> dishes = menu.stream().collect(new ToListCollector<Dish>()); //new로 인스턴스화해서 사용
+//        List<Dish> dishes = menu.stream().collect(toList());
+        System.out.println("dishes"+dishes);
+
+
+
+
 
 
 
