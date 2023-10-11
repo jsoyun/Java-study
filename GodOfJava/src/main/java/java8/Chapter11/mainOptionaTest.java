@@ -30,9 +30,9 @@ public class mainOptionaTest {
 //        System.out.println("example.getCarInsuranceName(person): " + ));
 //        example.getCarInsuranceName(Optional.of(person));
 
-//        Optional<Person> person = Optional.of(new Person());
-//        mainOptionaTest mainOptionaTest = new mainOptionaTest();
-//       System.out.println(" mainOptionaTest.getCarInsuranceName(person)"+  mainOptionaTest.getCarInsuranceName(person));
+        Optional<Person> person = Optional.of(new Person());
+        mainOptionaTest mainOptionaTest = new mainOptionaTest();
+       System.out.println(" mainOptionaTest.getCarInsuranceName(person)"+  mainOptionaTest.getCarInsuranceName(person));
 
 //        public class Person{
 //            private Car car;
